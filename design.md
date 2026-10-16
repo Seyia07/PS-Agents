@@ -12,7 +12,7 @@
 
 ## Evidence of Group Work
 
-<img width="500" height="653" alt="groupwork-evidence" src="https://github.com/user-attachments/assets/ec8f8482-f497-4a11-bab0-145bfd0851a3" />
+<img width="959" height="456" alt="image" src="https://github.com/user-attachments/assets/d4ae9899-d44a-4882-ab1d-6d6aa617cb4c" />
 
 
 ## Question 1
