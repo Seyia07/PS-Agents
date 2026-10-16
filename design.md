@@ -17,9 +17,7 @@
 
 ## Question 1
 
-### 1.1 PEAS description of the self driving trailer
-
-The agent is a self driving trailer that carries cargo from Nairobi to Kisumu along Kenyan highways.
+### PEAS Framework:
 
 | Component | Description |
 |-----------|-------------|
@@ -28,51 +26,26 @@ The agent is a self driving trailer that carries cargo from Nairobi to Kisumu al
 | Actuators | Steering wheel, accelerator, brake, horn, indicators |
 | Sensors | Cameras, GPS, sonar, radar, speedometer, fuel gauge |
 
-### 1.2 Environment of the trailer
+### Agents environment:
 
-**Partially observable.** The trailer's sensors only pick up what is close to it. It cannot see around a bend or know what another driver plans to do, so it has to make informed guesses about the road ahead.
+**i. Partially observable:** The trailer's sensors only pick up what is close to it. It cannot see around a bend or know what another driver plans to do, so it has to make informed guesses about the road ahead.
 
-**Stochastic.** The next state of the road does not depend only on the trailer's own action. Rain, potholes, a breakdown or a matatu cutting in are all outside its control. The same action can give a different result on a different day.
+**ii. Stochastic:** The next state of the road does not depend only on the trailer's own action. Rain, potholes, a breakdown or a matatu cutting in are all outside its control. The same action can give a different result on a different day.
 
-**Sequential.** What the trailer does now depends on what it did before. The route it picked and the fuel it has already used affect the choices it has left on the way to Kisumu.
+**iii. Sequential:** What the trailer does now depends on what it did before. The route it picked and the fuel it has already used affect the choices it has left on the way to Kisumu.
 
-**Dynamic.** The environment keeps changing while the trailer is still deciding what to do. Vehicles move, lights change and the weather shifts.
+**iv. Dynamic:** The environment keeps changing while the trailer is still deciding what to do. Vehicles move, lights change and the weather shifts.
 
-**Multiagent.** The trailer is not alone on the road. Other drivers, pedestrians and vehicles are also acting in the same space, and the trailer must respond to them.
+**v. Multiagent:** The trailer is not alone on the road. Other drivers, pedestrians and vehicles are also acting in the same space, and the trailer must respond to them.
 
 ---
 
+
 ## Question 2
 
-### 2.1 Problem formulation
+### Abstraction
 
-- **Goal:** get the trailer from Nairobi to Kisumu using the least distance.
-- **State:** the town the trailer is in, written as In(town).
-- **Initial state:** In(Nairobi)
-- **Actions:** Go(next town), for any town joined to the current town by a highway.
-- **Transition model:** Result(In(A), Go(B)) = In(B)
-- **Goal test:** is the trailer in Kisumu?
-- **Path cost:** the sum of the road distances in km.
-
-### 2.2 Abstraction
-
-The real road network has far too much detail to search. So we throw away what the search does not need and keep only what it does.
-
-What we ignore: lanes, junctions, traffic, weather, tolls, fuel stops and small villages. What we keep: the main towns and the distance between neighbouring ones.
-
-This gives two levels.
-
-**Level 1, regions.** At the top, each region is a single state. This is enough to see that the Central Highlands is a long way round, and that the trailer must pass through the Rift Valley to reach the Lake Victoria Basin.
-
-```mermaid
-graph LR
-    A[Nairobi region] --> B[Rift Valley region]
-    A --> C[Central Highlands region]
-    C --> B
-    B --> D[Lake Victoria Basin region]
-```
-
-**Level 2, towns.** Each region is opened up into its towns. A state is now one town, and an action is a drive from that town to the next one on the highway.
+Only the main towns on the highways between Nairobi and Kisumu were kept as states. Small roads, trading centres, road width, traffic and weather were removed, because the route only depends on which towns connect and how far apart they are.
 
 | Region | Towns used |
 |--------|------------|
@@ -81,11 +54,8 @@ graph LR
 | Rift Valley | Naivasha, Nakuru, Molo, Kericho, Eldoret, Narok, Bomet |
 | Lake Victoria Basin | Kisumu, Kisii, Kakamega |
 
-Towns that sit on the road between two of these, like Gilgil or Maai Mahiu, are folded into the road. They do not become states of their own.
 
-### 2.3 Distances between towns
-
-All distances come from the Google Maps driving directions. Maps often shows more than one route between two towns. Since our path cost is distance, we took the **shortest route in km** for every pair and used the same rule throughout.
+### Distances between towns
 
 | From | To | Distance (km) |
 |------|----|---------------|
@@ -107,9 +77,7 @@ All distances come from the Google Maps driving directions. Maps often shows mor
 | Eldoret | Kisumu | 126 |
 | Kakamega | Kisumu | 53.4 |
 
-### 2.4 Directed graph
-
-Each town is a state and each arrow is a road the trailer can take. The number on an arrow is the distance in km. Every highway can be driven both ways, but to keep the diagram clear only the arrows pointing away from Nairobi are drawn. The arrows back towards Nairobi have the same distances.
+### Directed graph
 
 ```mermaid
 stateDiagram-v2
@@ -132,15 +100,9 @@ stateDiagram-v2
     Nairobi --> Narok: 143
     Naivasha --> Nakuru: 69.6
 ```
+Note: since roads run both ways, a few roads are reversed (Nakuru to Nyeri and Kericho to Bomet), and since they are eliminated it does not affect the results
 
-### 2.5 Search tree
-
-The tree starts at the initial state, In(Nairobi), and grows by adding every town the trailer can drive to next. The number in brackets is g(n), the total distance in km from Nairobi to that node.
-
-Two rules were used while building it:
-
-1. A branch never goes straight back to its parent. Without this the tree would loop forever, because the roads go both ways.
-2. If a town is reached again by a longer path, the node is marked as pruned and not expanded. Another path already reached that town cheaper.
+### Search tree
 
 ```mermaid
 graph TD
@@ -176,12 +138,6 @@ graph TD
 
 ## Question 3
 
-### 3.1 Method
-
-The path cost is distance, so the search to use is **Uniform Cost Search (UCS)**. It always expands the path with the lowest total cost g(n) first, using a frontier ordered by g. It does not stop when a goal is first generated. It stops when the goal is picked for expansion, because by then no cheaper path can still be waiting in the frontier.
-
-### 3.2 Trace
-
 | Step | Node expanded | g (km) | New paths added to the frontier |
 |------|---------------|--------|---------------------------------|
 | 1 | Nairobi | 0 | Thika 45.1, Naivasha 90.4, Narok 143 |
@@ -197,7 +153,6 @@ The path cost is distance, so the search to use is **Uniform Cost Search (UCS)**
 | 11 | Eldoret | 316.0 | Kakamega 403.9, Kisumu 442.0 (dropped) |
 | 12 | Kisumu | 355.9 | Goal reached, search stops |
 
-### 3.3 Routes compared
 
 | Route | Calculation | Total (km) |
 |-------|-------------|------------|
@@ -208,16 +163,9 @@ The path cost is distance, so the search to use is **Uniform Cost Search (UCS)**
 | Nairobi, Naivasha, Nakuru, Eldoret, Kakamega, Kisumu | 90.4 + 69.6 + 156 + 87.9 + 53.4 | 457.3 |
 | Nairobi, Thika, Nyeri, Nakuru, Molo, Kericho, Kisumu | 45.1 + 108 + 167 + 47.7 + 64.2 + 84.0 | 516.0 |
 
-### 3.4 Answer
 
 The optimal path from Nairobi to Kisumu is:
-
 **Nairobi → Naivasha → Nakuru → Molo → Kericho → Kisumu**
-
 **Total path cost = 90.4 + 69.6 + 47.7 + 64.2 + 84.0 = 355.9 km**
 
-This path is 24.2 km shorter than the next best one, which goes through Narok and Bomet (380.1 km). The route through the Central Highlands is the longest at 516.0 km because it takes the trailer far north before it comes back to Nakuru.
-
-UCS is complete and optimal here. The graph is finite and every distance is positive, so the first time Kisumu is expanded, we know the path to it is the cheapest one.
-
-One limit to note: the cost is distance only. A route with the fewest km might not be the fastest, because traffic, tolls and the state of the road are not part of the cost.
+Limit: the cost is distance only therefore a route with the fewest km might not be the fastest, because traffic, tolls and the state of the road are not part of the cost.
